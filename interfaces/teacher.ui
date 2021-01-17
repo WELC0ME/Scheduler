@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>653</width>
+    <width>894</width>
     <height>629</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>653</width>
+    <width>894</width>
     <height>629</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>653</width>
+    <width>894</width>
     <height>629</height>
    </size>
   </property>
@@ -32,7 +32,7 @@
    <widget class="QPushButton" name="btn_save">
     <property name="geometry">
      <rect>
-      <x>476</x>
+      <x>718</x>
       <y>538</y>
       <width>161</width>
       <height>41</height>
@@ -90,7 +90,7 @@
     <property name="geometry">
      <rect>
       <x>16</x>
-      <y>89</y>
+      <y>121</y>
       <width>161</width>
       <height>41</height>
      </rect>
@@ -114,7 +114,7 @@
     <property name="geometry">
      <rect>
       <x>16</x>
-      <y>154</y>
+      <y>218</y>
       <width>161</width>
       <height>41</height>
      </rect>
@@ -134,35 +134,11 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="lab_subject">
-    <property name="geometry">
-     <rect>
-      <x>16</x>
-      <y>218</y>
-      <width>161</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>16</pointsize>
-     </font>
-    </property>
-    <property name="styleSheet">
-     <string notr="true"/>
-    </property>
-    <property name="text">
-     <string>Subject</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
    <widget class="QLineEdit" name="le_patronymic">
     <property name="geometry">
      <rect>
       <x>193</x>
-      <y>154</y>
+      <y>218</y>
       <width>201</width>
       <height>41</height>
      </rect>
@@ -183,7 +159,7 @@
     <property name="geometry">
      <rect>
       <x>193</x>
-      <y>89</y>
+      <y>121</y>
       <width>201</width>
       <height>41</height>
      </rect>
@@ -221,7 +197,7 @@
      <string/>
     </property>
    </widget>
-   <widget class="QTableWidget" name="table_work_hours">
+   <widget class="QTableWidget" name="tw_days">
     <property name="geometry">
      <rect>
       <x>16</x>
@@ -339,13 +315,13 @@
      </property>
     </column>
    </widget>
-   <widget class="QTableWidget" name="table_available_classes">
+   <widget class="QTableWidget" name="tw_classes">
     <property name="geometry">
      <rect>
       <x>410</x>
-      <y>16</y>
+      <y>24</y>
       <width>227</width>
-      <height>242</height>
+      <height>235</height>
      </rect>
     </property>
     <property name="font">
@@ -385,11 +361,6 @@
     </attribute>
     <column>
      <property name="text">
-      <string>ID</string>
-     </property>
-    </column>
-    <column>
-     <property name="text">
       <string>Class</string>
      </property>
     </column>
@@ -399,13 +370,13 @@
      </property>
     </column>
    </widget>
-   <widget class="QComboBox" name="cb_subject">
+   <widget class="QTableWidget" name="tw_asubjects">
     <property name="geometry">
      <rect>
-      <x>193</x>
-      <y>218</y>
-      <width>201</width>
-      <height>41</height>
+      <x>652</x>
+      <y>24</y>
+      <width>227</width>
+      <height>235</height>
      </rect>
     </property>
     <property name="font">
@@ -413,9 +384,101 @@
       <pointsize>16</pointsize>
      </font>
     </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
     <property name="styleSheet">
      <string notr="true"/>
     </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAsNeeded</enum>
+    </property>
+    <property name="alternatingRowColors">
+     <bool>false</bool>
+    </property>
+    <property name="textElideMode">
+     <enum>Qt::ElideMiddle</enum>
+    </property>
+    <property name="verticalScrollMode">
+     <enum>QAbstractItemView::ScrollPerPixel</enum>
+    </property>
+    <property name="horizontalScrollMode">
+     <enum>QAbstractItemView::ScrollPerPixel</enum>
+    </property>
+    <property name="showGrid">
+     <bool>false</bool>
+    </property>
+    <property name="cornerButtonEnabled">
+     <bool>false</bool>
+    </property>
+    <attribute name="verticalHeaderVisible">
+     <bool>false</bool>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>Subject</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Lead</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QTableWidget" name="tw_rooms">
+    <property name="geometry">
+     <rect>
+      <x>652</x>
+      <y>283</y>
+      <width>227</width>
+      <height>235</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+     </font>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAsNeeded</enum>
+    </property>
+    <property name="alternatingRowColors">
+     <bool>false</bool>
+    </property>
+    <property name="textElideMode">
+     <enum>Qt::ElideMiddle</enum>
+    </property>
+    <property name="verticalScrollMode">
+     <enum>QAbstractItemView::ScrollPerPixel</enum>
+    </property>
+    <property name="horizontalScrollMode">
+     <enum>QAbstractItemView::ScrollPerPixel</enum>
+    </property>
+    <property name="showGrid">
+     <bool>false</bool>
+    </property>
+    <property name="cornerButtonEnabled">
+     <bool>false</bool>
+    </property>
+    <attribute name="verticalHeaderVisible">
+     <bool>false</bool>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>Room</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Lead</string>
+     </property>
+    </column>
    </widget>
   </widget>
   <widget class="QStatusBar" name="status_bar">

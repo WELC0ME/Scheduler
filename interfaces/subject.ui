@@ -69,7 +69,7 @@
      <string>Save</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="le_title">
+   <widget class="QLineEdit" name="le_name">
     <property name="enabled">
      <bool>true</bool>
     </property>

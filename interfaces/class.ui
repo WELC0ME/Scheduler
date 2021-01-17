@@ -104,7 +104,7 @@
      <string/>
     </property>
    </widget>
-   <widget class="QTableWidget" name="table_class_subjects">
+   <widget class="QTableWidget" name="tw_subjects">
     <property name="geometry">
      <rect>
       <x>16</x>
@@ -137,11 +137,6 @@
     <attribute name="verticalHeaderVisible">
      <bool>false</bool>
     </attribute>
-    <column>
-     <property name="text">
-      <string>ID</string>
-     </property>
-    </column>
     <column>
      <property name="text">
       <string>Subject</string>
