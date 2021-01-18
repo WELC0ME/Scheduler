@@ -17,6 +17,7 @@ class Dialog(QMainWindow):
         self.setStyleSheet(STYLESHEET)
         self.btn_save.clicked.connect(self.save)
         self.deps = deps
+        self.db_table = db_table
 
         con = sqlite3.connect(DATABASE_NAME)
         cur = con.cursor()
@@ -127,7 +128,7 @@ class Dialog(QMainWindow):
     def le_set(le, obj, attr):
         if not hasattr(obj, attr):
             setattr(obj, attr, '')
-        le.setText(getattr(obj, attr))
+        le.setText(str(getattr(obj, attr)))
 
 
 class Menu(QMainWindow):
@@ -181,7 +182,16 @@ class Menu(QMainWindow):
 
     def exit_(self):
         if self.tabWidget.currentIndex() == 5:
-            # save to BD
+            con = sqlite3.connect(DATABASE_NAME)
+            cur = con.cursor()
+            for window in windows.keys():
+                if not isinstance(windows[window], Dialog):
+                    continue
+                cur.execute("DELETE FROM " + windows[window].db_table)
+                for obj in config.OBJECTS[window]:
+                    cur.execute('INSERT INTO ' + windows[window].db_table + '(' + ', '.join([str(i) for i in windows[window].deps.keys()]) +') VALUES(' + ', '.join(["'" + str(getattr(obj, i)) + "'" for i in [str(k) for k in windows[window].deps.keys()]])+')')
+            con.commit()
+            con.close()
             sys.exit(1)
 
 
