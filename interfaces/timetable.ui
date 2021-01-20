@@ -165,10 +165,28 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QPushButton" name="btn_save">
+   <widget class="QPushButton" name="btn_close">
     <property name="geometry">
      <rect>
       <x>538</x>
+      <y>575</y>
+      <width>161</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Close</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_save">
+    <property name="geometry">
+     <rect>
+      <x>361</x>
       <y>575</y>
       <width>161</width>
       <height>41</height>

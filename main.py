@@ -16,6 +16,7 @@ class Dialog(QMainWindow):
         self.setWindowTitle(name.capitalize())
         self.setStyleSheet(STYLESHEET)
         self.btn_save.clicked.connect(self.save)
+        self.btn_close.clicked.connect(self.close)
         self.deps = deps
         self.db_table = db_table
 
@@ -36,20 +37,31 @@ class Dialog(QMainWindow):
 
     def show(self):
         super().show()
+        self.statusBar().showMessage("")
         self.manage('set')
 
     def save(self):
-        if self.manage('get'):
+        res = self.manage('get')
+        if res:
+            if config.CHOSEN_KEY[1] == -1:
+                config.OBJECTS[config.CHOSEN_KEY[0]].append(res.copy())
+            else:
+                config.OBJECTS[config.CHOSEN_KEY[0]][config.CHOSEN_KEY[1]] = res.copy()
             self.hide()
             windows['menu'].show()
 
+    def close(self):
+        self.hide()
+        windows['menu'].show()
+
     def manage(self, state):
         try:
+            copy = config.CHOSEN_KEY[2].copy()
             for attr in self.deps.keys():
-                getattr(self, self.deps[attr][:2] + '_' + state)(getattr(self, self.deps[attr]), config.CHOSEN, attr)
-            return True
-        except AssertionError:
-            print('Error')
+                getattr(self, self.deps[attr][:2] + '_' + state)(getattr(self, self.deps[attr]), copy, attr)
+            return copy
+        except AssertionError as e:
+            self.statusBar().showMessage("Error: %s" % e)
 
     @staticmethod
     def cb_get(cb, obj, attr):
@@ -82,6 +94,10 @@ class Dialog(QMainWindow):
                 else:
                     tmp.append(tw.item(i, k).text())
             tmp2.append('-'.join([str(j) for j in tmp]))
+        if attr == 'days':
+            assert any([int(k) > 0 for i in tmp2 for k in i.split('-')]), 'table unfilled'
+        else:
+            assert any([int(i.split('-')[-1]) > 0 for i in tmp2]), 'table unfilled'
         out.append('_'.join(tmp2))
         out.append(tw.columnCount())
         out.append(type_)
@@ -92,16 +108,23 @@ class Dialog(QMainWindow):
     def tw_set(tw, obj, attr):
         set_stretch(tw)
 
-        if not hasattr(obj, attr):
-            gen = lambda name: '_'.join([str(i.name) + '-0' for i in config.OBJECTS[name]])
-            keys = {
-                'subjects': gen('subject') + '|2|number|subject',
-                'asubjects': gen('subject') + '|2|bool|subject',
-                'classes': gen('class') + '|2|bool|class',
-                'rooms': gen('room') + '|2|bool|room',
-                'days': '_'.join(['-'.join(['0' for _ in range(8)]) for _ in range(6)]) + '|8|bool|.'
-            }
-            setattr(obj, attr, keys[attr])
+        if attr == 'days':
+            values = {str(i): str(k) for i, k in enumerate(getattr(obj, attr, '|').split('|')[0].replace('-', '_').split('_'))}
+        else:
+            values = {i.split('-')[0]: i.split('-')[1] for i in getattr(obj, attr, '|').split('|')[0].split('_') if i}
+        gen = lambda name: {str(i.name): '0' for i in config.OBJECTS[name]}
+        keys = {
+            'subjects': (gen('subject'), '|1|number|subject'),
+            'asubjects': (gen('subject'), '|1|bool|subject'),
+            'classes': (gen('class'), '|1|bool|class'),
+            'rooms': (gen('room'), '|1|bool|room'),
+            'days': ({str(i): '0' for i in range(48)}, '|8|bool|.')
+        }
+        dictionary = keys[attr][0]
+        if attr == 'days':
+            setattr(obj, attr, '_'.join(['-'.join([values.get(str(k * 8 + i), dictionary[str(k * 8 + i)]) for i in range(8)]) for k in range(6)]) + '|8|bool|.')
+        else:
+            setattr(obj, attr, '_'.join([i + '-' + values.get(i, dictionary[i]) for i in dictionary.keys()]) + keys[attr][1])
         values, x, type_, table = getattr(obj, attr).split('|')
         if not values:
             return
@@ -112,7 +135,7 @@ class Dialog(QMainWindow):
             'bool': [QCheckBox, 'setChecked'],
             'number': [QSpinBox, 'setValue']
         }
-        for i in range(len(values)):
+        for i in range(tw.rowCount()):
             if len(table) > 1:
                 tw.setItem(i, 0, QTableWidgetItem(str(values[i][0])))
             for k in range(1 if len(table) > 1 else 0, tw.columnCount()):
@@ -121,7 +144,7 @@ class Dialog(QMainWindow):
 
     @staticmethod
     def le_get(le, obj, attr):
-        assert le.text()
+        assert le.text(), 'line edit unfilled'
         setattr(obj, attr, le.text())
 
     @staticmethod
@@ -147,7 +170,6 @@ class Menu(QMainWindow):
             set_stretch(getattr(self, 'tw_' + name))
             getattr(self, 'tw_' + name).hideColumn(0)
             getattr(self, 'btn_remove_' + name).clicked.connect(self.remove)
-
         self.deps = {
             0: None,
             1: 'class',
@@ -160,9 +182,9 @@ class Menu(QMainWindow):
     def show(self):
         for name in config.OBJECTS.keys():
             getattr(self, 'tw_' + name).setRowCount(len(config.OBJECTS[name]))
-            column = 1
-            for attr in windows[name].deps.keys():
-                if windows[name].deps[attr][:2] in ['le', 'cb']:
+            column = 0
+            for attr in ['id_', *windows[name].deps.keys()]:
+                if attr == 'id_' or windows[name].deps[attr][:2] in ['le', 'cb']:
                     for i, obj in enumerate(config.OBJECTS[name]):
                         getattr(self, 'tw_' + name).setItem(i, column, QTableWidgetItem(str(getattr(obj, attr))))
                     column += 1
@@ -171,14 +193,23 @@ class Menu(QMainWindow):
     def add(self, row):
         if isinstance(row, bool):
             ids = [i.id_ for i in config.OBJECTS[self.deps[self.tabWidget.currentIndex()]]]
-            config.OBJECTS[self.deps[self.tabWidget.currentIndex()]].append(Obj(1 + max(ids) if ids else 0))
             row = -1
-        config.CHOSEN = config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][row]
+            obj = Obj(max(ids) + 1 if ids else 0)
+        else:
+            obj = config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][row]
+
+        config.CHOSEN_KEY = (self.deps[self.tabWidget.currentIndex()], row, obj)
         self.hide()
         windows[self.deps[self.tabWidget.currentIndex()]].show()
 
     def remove(self):
-        pass
+        i = 0
+        while i < len(config.OBJECTS[self.deps[self.tabWidget.currentIndex()]]):
+            if config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][i].id_ in [int(getattr(self, 'tw_' + self.deps[self.tabWidget.currentIndex()]).item(i, 0).text()) for i in list(set([idx.row() for idx in getattr(self, 'tw_' + self.deps[self.tabWidget.currentIndex()]).selectedIndexes()]))]:
+                config.OBJECTS[self.deps[self.tabWidget.currentIndex()]].remove(config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][i])
+                i -= 1
+            i += 1
+        self.show()
 
     def exit_(self):
         if self.tabWidget.currentIndex() == 5:
@@ -233,7 +264,8 @@ if __name__ == '__main__':
             'name': 'le_name'
         }),
     }
-
+    # заблокировать крестик
+    # учесть ситуацию выхода из диалога - надо удалять OBJECTS[window][-1]
     sys.excepthook = except_hook  # temp for debugging
     windows['menu'] = Menu()
     sys.exit(app.exec())
