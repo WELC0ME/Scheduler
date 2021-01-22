@@ -44,181 +44,62 @@
      <enum>Qt::NoFocus</enum>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>Timetable</string>
+      <string>  Menu  </string>
      </attribute>
      <widget class="QPushButton" name="btn_create">
       <property name="geometry">
        <rect>
-        <x>431</x>
-        <y>9</y>
-        <width>101</width>
-        <height>31</height>
+        <x>240</x>
+        <y>180</y>
+        <width>100</width>
+        <height>41</height>
        </rect>
       </property>
       <property name="text">
        <string>Create</string>
       </property>
      </widget>
-     <widget class="QWidget" name="gridLayoutWidget">
+     <widget class="QLabel" name="label">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>10</y>
-        <width>521</width>
-        <height>411</height>
+        <y>30</y>
+        <width>560</width>
+        <height>121</height>
        </rect>
       </property>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="0">
-        <widget class="QLabel" name="warning">
-         <property name="text">
-          <string>Schedule hasn't been made yet</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QTabWidget" name="tabWidget_2">
-         <property name="focusPolicy">
-          <enum>Qt::TabFocus</enum>
-         </property>
-         <property name="currentIndex">
-          <number>1</number>
-         </property>
-         <widget class="QWidget" name="tab_5">
-          <attribute name="title">
-           <string>By classes</string>
-          </attribute>
-          <widget class="QTableWidget" name="table_by_classes">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>10</y>
-             <width>481</width>
-             <height>311</height>
-            </rect>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::NoFocus</enum>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::NoEditTriggers</set>
-           </property>
-           <property name="verticalScrollMode">
-            <enum>QAbstractItemView::ScrollPerPixel</enum>
-           </property>
-           <property name="horizontalScrollMode">
-            <enum>QAbstractItemView::ScrollPerPixel</enum>
-           </property>
-           <property name="showGrid">
-            <bool>false</bool>
-           </property>
-           <property name="cornerButtonEnabled">
-            <bool>false</bool>
-           </property>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>ID</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Number</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string/>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string/>
-            </property>
-           </column>
-          </widget>
-         </widget>
-         <widget class="QWidget" name="tab_6">
-          <attribute name="title">
-           <string>By teachers</string>
-          </attribute>
-          <widget class="QTableWidget" name="table_by_teachers">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>10</y>
-             <width>481</width>
-             <height>311</height>
-            </rect>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::NoFocus</enum>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::NoEditTriggers</set>
-           </property>
-           <property name="verticalScrollMode">
-            <enum>QAbstractItemView::ScrollPerPixel</enum>
-           </property>
-           <property name="horizontalScrollMode">
-            <enum>QAbstractItemView::ScrollPerPixel</enum>
-           </property>
-           <property name="showGrid">
-            <bool>false</bool>
-           </property>
-           <property name="cornerButtonEnabled">
-            <bool>false</bool>
-           </property>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>ID</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Surname</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Patronymic</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Object</string>
-            </property>
-           </column>
-          </widget>
-         </widget>
-        </widget>
-       </item>
-      </layout>
+      <property name="font">
+       <font>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>This program will help you create your school schedule. Use the tabs to
+customize your subjects, teachers, classes and classroms. After that, click
+the button &quot;Create&quot; and program will make schedule and save them to the
+folder &quot;Schedule&quot;.</string>
+      </property>
      </widget>
-     <zorder>gridLayoutWidget</zorder>
-     <zorder>btn_create</zorder>
+     <widget class="QPlainTextEdit" name="plainTextEdit">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>260</y>
+        <width>560</width>
+        <height>250</height>
+       </rect>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">
@@ -283,11 +164,6 @@
       <attribute name="verticalHeaderVisible">
        <bool>false</bool>
       </attribute>
-      <column>
-       <property name="text">
-        <string>ID</string>
-       </property>
-      </column>
       <column>
        <property name="text">
         <string>Name</string>
@@ -365,11 +241,6 @@
       <attribute name="verticalHeaderVisible">
        <bool>false</bool>
       </attribute>
-      <column>
-       <property name="text">
-        <string>ID</string>
-       </property>
-      </column>
       <column>
        <property name="text">
         <string>Surname</string>
@@ -462,11 +333,6 @@
       </attribute>
       <column>
        <property name="text">
-        <string>ID</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
         <string>Name</string>
        </property>
       </column>
@@ -542,11 +408,6 @@
       </attribute>
       <column>
        <property name="text">
-        <string>ID</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
         <string>Name</string>
        </property>
       </column>
@@ -580,7 +441,7 @@
     </widget>
     <widget class="QWidget" name="tab_8">
      <attribute name="title">
-      <string>Exit  </string>
+      <string>  Exit  </string>
      </attribute>
     </widget>
    </widget>

@@ -17,22 +17,22 @@ class Dialog(QMainWindow):
         self.setStyleSheet(STYLESHEET)
         self.btn_save.clicked.connect(self.save)
         self.btn_close.clicked.connect(self.close)
-        self.deps = deps
         self.db_table = db_table
+        self.deps = deps
+        self.copy = None
 
         con = sqlite3.connect(DATABASE_NAME)
         cur = con.cursor()
-
-        res = cur.execute('SELECT * FROM ' + db_table)
-        if name not in config.OBJECTS.keys():
-            config.OBJECTS[name] = [self.new_object(i) for i in res]
-
+        config.OBJECTS[name] = [self.new_object(i) for i in cur.execute('SELECT * FROM ' + db_table)]
         con.close()
 
     def new_object(self, params):
         obj = Obj(params[0])
         for i, attr in enumerate(self.deps.keys()):
-            setattr(obj, attr, params[1 + i])
+            try:
+                setattr(obj, attr, eval(str(params[1 + i])))
+            except Exception:
+                setattr(obj, attr, eval('"' + str(params[1 + i]) + '"'))
         return obj
 
     def show(self):
@@ -41,25 +41,26 @@ class Dialog(QMainWindow):
         self.manage('set')
 
     def save(self):
-        res = self.manage('get')
-        if res:
+        if self.manage('get'):
             if config.CHOSEN_KEY[1] == -1:
-                config.OBJECTS[config.CHOSEN_KEY[0]].append(res.copy())
+                config.OBJECTS[config.CHOSEN_KEY[0]].append(self.copy.copy())
             else:
-                config.OBJECTS[config.CHOSEN_KEY[0]][config.CHOSEN_KEY[1]] = res.copy()
+                config.OBJECTS[config.CHOSEN_KEY[0]][config.CHOSEN_KEY[1]] = self.copy.copy()
+            self.copy = None
             self.hide()
             windows['menu'].show()
 
     def close(self):
+        self.copy = None
         self.hide()
         windows['menu'].show()
 
     def manage(self, state):
         try:
-            copy = config.CHOSEN_KEY[2].copy()
+            self.copy = config.CHOSEN_KEY[2].copy() if not self.copy else self.copy
             for attr in self.deps.keys():
-                getattr(self, self.deps[attr][:2] + '_' + state)(getattr(self, self.deps[attr]), copy, attr)
-            return copy
+                getattr(self, self.deps[attr][:2] + '_' + state)(getattr(self, self.deps[attr]), self.copy, attr)
+            return True
         except AssertionError as e:
             self.statusBar().showMessage("Error: %s" % e)
 
@@ -79,68 +80,52 @@ class Dialog(QMainWindow):
             'QCheckBox': 'isChecked',
             'QSpinBox': 'value'
         }
-        out = []
-        type_ = None
-        tmp2 = []
+        values = list(getattr(obj, attr)['values'].keys())
+        columns = [i for i in range(tw.columnCount())] if attr == 'days' else [1]
         for i in range(tw.rowCount()):
-            tmp = []
-            for k in range(tw.columnCount()):
-                if not type_ and tw.cellWidget(i, k).__class__.__name__ == 'QCheckBox':
-                    type_ = 'bool'
-                elif not type_ and tw.cellWidget(i, k).__class__.__name__ == 'QSpinBox':
-                    type_ = 'number'
-                if tw.cellWidget(i, k).__class__.__name__ != 'NoneType':
-                    tmp.append('1' if getattr(tw.cellWidget(i, k), keys[tw.cellWidget(i, k).__class__.__name__])() else '0')
-                else:
-                    tmp.append(tw.item(i, k).text())
-            tmp2.append('-'.join([str(j) for j in tmp]))
-        if attr == 'days':
-            assert any([int(k) > 0 for i in tmp2 for k in i.split('-')]), 'table unfilled'
-        else:
-            assert any([int(i.split('-')[-1]) > 0 for i in tmp2]), 'table unfilled'
-        out.append('_'.join(tmp2))
-        out.append(tw.columnCount())
-        out.append(type_)
-        out.append('.' if attr == 'days' else attr)
-        setattr(obj, attr, '|'.join([str(i) for i in out]))
+            for k in columns:
+                res = getattr(tw.cellWidget(i, k), keys[str(type(tw.cellWidget(i, k))).split('.')[-1][:-2]])()
+                shift = k if attr == 'days' else 0
+                coeff = tw.columnCount() if attr == 'days' else 0
+                getattr(obj, attr)['values'][values[i * coeff + shift]] = res
 
     @staticmethod
     def tw_set(tw, obj, attr):
         set_stretch(tw)
 
-        if attr == 'days':
-            values = {str(i): str(k) for i, k in enumerate(getattr(obj, attr, '|').split('|')[0].replace('-', '_').split('_'))}
-        else:
-            values = {i.split('-')[0]: i.split('-')[1] for i in getattr(obj, attr, '|').split('|')[0].split('_') if i}
-        gen = lambda name: {str(i.name): '0' for i in config.OBJECTS[name]}
+        gen = lambda name: {i.id_: 0 for i in config.OBJECTS[name]}
         keys = {
-            'subjects': (gen('subject'), '|1|number|subject'),
-            'asubjects': (gen('subject'), '|1|bool|subject'),
-            'classes': (gen('class'), '|1|bool|class'),
-            'rooms': (gen('room'), '|1|bool|room'),
-            'days': ({str(i): '0' for i in range(48)}, '|8|bool|.')
+            'subjects': {'values': gen('subject'), 'type': 'number', 'table': 'subject'},
+            'asubjects': {'values': gen('subject'), 'type': 'bool', 'table': 'subject'},
+            'classes': {'values': gen('class'), 'type': 'bool', 'table': 'class'},
+            'rooms': {'values': gen('room'), 'type': 'bool', 'table': 'room'},
+            'days': {'values': {str(i): 0 for i in range(48)}, 'type': 'bool', 'table': '.'},
         }
-        dictionary = keys[attr][0]
-        if attr == 'days':
-            setattr(obj, attr, '_'.join(['-'.join([values.get(str(k * 8 + i), dictionary[str(k * 8 + i)]) for i in range(8)]) for k in range(6)]) + '|8|bool|.')
-        else:
-            setattr(obj, attr, '_'.join([i + '-' + values.get(i, dictionary[i]) for i in dictionary.keys()]) + keys[attr][1])
-        values, x, type_, table = getattr(obj, attr).split('|')
-        if not values:
-            return
+        res = keys[attr]
+        for i in res['values'].keys():
+            try:
+                res['values'][i] = getattr(obj, attr)['values'][i]
+            except Exception:
+                continue
+        setattr(obj, attr, res)
 
-        values = [i.split('-') for i in values.split('_')]
-        tw.setRowCount(len(values))
         keys = {
             'bool': [QCheckBox, 'setChecked'],
             'number': [QSpinBox, 'setValue']
         }
-        for i in range(tw.rowCount()):
-            if len(table) > 1:
-                tw.setItem(i, 0, QTableWidgetItem(str(values[i][0])))
-            for k in range(1 if len(table) > 1 else 0, tw.columnCount()):
-                tw.setCellWidget(i, k, keys[type_][0]())
-                getattr(tw.cellWidget(i, k), keys[type_][1])(int(values[i][k]))
+
+        tw.setRowCount(len(res['values'].keys()) if attr != 'days' else 6)
+        values = list(res['values'].keys())
+        if attr != 'days':
+            for i in range(tw.rowCount()):
+                tw.setItem(i, 0, QTableWidgetItem(str([j for j in config.OBJECTS[res['table']] if j.id_ == values[i]][0].name)))
+                tw.setCellWidget(i, 1, keys[res['type']][0]())
+                getattr(tw.cellWidget(i, 1), keys[res['type']][1])(res['values'][values[i]])
+        else:
+            for i in range(tw.rowCount()):
+                for k in range(tw.columnCount()):
+                    tw.setCellWidget(i, k, keys[res['type']][0]())
+                    getattr(tw.cellWidget(i, k), keys[res['type']][1])(res['values'][values[i * tw.columnCount() + k]])
 
     @staticmethod
     def le_get(le, obj, attr):
@@ -163,12 +148,12 @@ class Menu(QMainWindow):
         self.setWindowTitle('Scheduler')
 
         self.tabWidget.currentChanged.connect(self.exit_)
+        self.btn_create.clicked.connect(self.create)
 
         for name in config.OBJECTS.keys():
             getattr(self, 'btn_add_' + name).clicked.connect(self.add)
             getattr(self, 'tw_' + name).cellDoubleClicked.connect(self.add)
             set_stretch(getattr(self, 'tw_' + name))
-            getattr(self, 'tw_' + name).hideColumn(0)
             getattr(self, 'btn_remove_' + name).clicked.connect(self.remove)
         self.deps = {
             0: None,
@@ -183,8 +168,8 @@ class Menu(QMainWindow):
         for name in config.OBJECTS.keys():
             getattr(self, 'tw_' + name).setRowCount(len(config.OBJECTS[name]))
             column = 0
-            for attr in ['id_', *windows[name].deps.keys()]:
-                if attr == 'id_' or windows[name].deps[attr][:2] in ['le', 'cb']:
+            for attr in windows[name].deps.keys():
+                if windows[name].deps[attr][:2] in ['le', 'cb']:
                     for i, obj in enumerate(config.OBJECTS[name]):
                         getattr(self, 'tw_' + name).setItem(i, column, QTableWidgetItem(str(getattr(obj, attr))))
                     column += 1
@@ -203,12 +188,9 @@ class Menu(QMainWindow):
         windows[self.deps[self.tabWidget.currentIndex()]].show()
 
     def remove(self):
-        i = 0
-        while i < len(config.OBJECTS[self.deps[self.tabWidget.currentIndex()]]):
-            if config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][i].id_ in [int(getattr(self, 'tw_' + self.deps[self.tabWidget.currentIndex()]).item(i, 0).text()) for i in list(set([idx.row() for idx in getattr(self, 'tw_' + self.deps[self.tabWidget.currentIndex()]).selectedIndexes()]))]:
-                config.OBJECTS[self.deps[self.tabWidget.currentIndex()]].remove(config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][i])
-                i -= 1
-            i += 1
+        objects = config.OBJECTS[self.deps[self.tabWidget.currentIndex()]]
+        for k in sorted(list(set([idx.row() for idx in getattr(self, 'tw_' + self.deps[self.tabWidget.currentIndex()]).selectedIndexes()])))[::-1]:
+            objects.remove(objects[k])
         self.show()
 
     def exit_(self):
@@ -220,10 +202,19 @@ class Menu(QMainWindow):
                     continue
                 cur.execute("DELETE FROM " + windows[window].db_table)
                 for obj in config.OBJECTS[window]:
-                    cur.execute('INSERT INTO ' + windows[window].db_table + '(' + ', '.join([str(i) for i in windows[window].deps.keys()]) +') VALUES(' + ', '.join(["'" + str(getattr(obj, i)) + "'" for i in [str(k) for k in windows[window].deps.keys()]])+')')
+                    cur.execute('INSERT INTO ' + windows[window].db_table + '(' + ', '.join(['id', *[str(i) for i in windows[window].deps.keys()]]) +') VALUES (' + ', '.join(['"' + str(getattr(obj, i)) + '"' for i in [str(k) for k in ['id_', *windows[window].deps.keys()]]]) + ')')
             con.commit()
             con.close()
             sys.exit(1)
+
+    def create_schedule(self):
+        table = []
+        for day in range(6 * 8):
+            table.append([])
+            for class_ in config.OBJECTS['classes']:
+                table[day].append([])
+                for teacher in config.OBJECTS['teachers']:
+                    pass
 
 
 def set_stretch(table):
@@ -265,7 +256,6 @@ if __name__ == '__main__':
         }),
     }
     # заблокировать крестик
-    # учесть ситуацию выхода из диалога - надо удалять OBJECTS[window][-1]
     sys.excepthook = except_hook  # temp for debugging
     windows['menu'] = Menu()
     sys.exit(app.exec())
