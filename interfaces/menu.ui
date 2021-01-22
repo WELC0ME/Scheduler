@@ -84,7 +84,7 @@ the button &quot;Create&quot; and program will make schedule and save them to th
 folder &quot;Schedule&quot;.</string>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextEdit">
+     <widget class="QPlainTextEdit" name="log">
       <property name="geometry">
        <rect>
         <x>10</x>

@@ -2,7 +2,7 @@ QWidget
 {
 	background-color: #282828;
 }
-QPushButton, QLabel, QLineEdit, QStatusBar
+QPushButton, QLabel, QLineEdit, QStatusBar, QPlainTextEdit
 {
     color: #B1B1B1;
     border-color: #1E1E1E;

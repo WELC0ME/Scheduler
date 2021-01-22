@@ -5,6 +5,9 @@ from PyQt5.QtGui import QIcon
 from PyQt5 import uic
 from config import *
 import config
+import datetime
+import os
+import docx
 
 
 class Dialog(QMainWindow):
@@ -80,14 +83,18 @@ class Dialog(QMainWindow):
             'QCheckBox': 'isChecked',
             'QSpinBox': 'value'
         }
+        out = getattr(obj, attr)
         values = list(getattr(obj, attr)['values'].keys())
         columns = [i for i in range(tw.columnCount())] if attr == 'days' else [1]
         for i in range(tw.rowCount()):
             for k in columns:
                 res = getattr(tw.cellWidget(i, k), keys[str(type(tw.cellWidget(i, k))).split('.')[-1][:-2]])()
+                if isinstance(res, bool):
+                    res = 1 if res else 0
                 shift = k if attr == 'days' else 0
-                coeff = tw.columnCount() if attr == 'days' else 0
-                getattr(obj, attr)['values'][values[i * coeff + shift]] = res
+                coeff = tw.columnCount() if attr == 'days' else 1
+                out['values'][values[i * coeff + shift]] = res
+        setattr(obj, attr, out)
 
     @staticmethod
     def tw_set(tw, obj, attr):
@@ -99,7 +106,7 @@ class Dialog(QMainWindow):
             'asubjects': {'values': gen('subject'), 'type': 'bool', 'table': 'subject'},
             'classes': {'values': gen('class'), 'type': 'bool', 'table': 'class'},
             'rooms': {'values': gen('room'), 'type': 'bool', 'table': 'room'},
-            'days': {'values': {str(i): 0 for i in range(48)}, 'type': 'bool', 'table': '.'},
+            'days': {'values': {i: 0 for i in range(48)}, 'type': 'bool', 'table': '.'},
         }
         res = keys[attr]
         for i in res['values'].keys():
@@ -148,7 +155,7 @@ class Menu(QMainWindow):
         self.setWindowTitle('Scheduler')
 
         self.tabWidget.currentChanged.connect(self.exit_)
-        self.btn_create.clicked.connect(self.create)
+        self.btn_create.clicked.connect(self.create_schedule)
 
         for name in config.OBJECTS.keys():
             getattr(self, 'btn_add_' + name).clicked.connect(self.add)
@@ -211,10 +218,95 @@ class Menu(QMainWindow):
         table = []
         for day in range(6 * 8):
             table.append([])
-            for class_ in config.OBJECTS['classes']:
+            for class_ in config.OBJECTS['class']:
                 table[day].append([])
-                for teacher in config.OBJECTS['teachers']:
-                    pass
+                for teacher in config.OBJECTS['teacher']:
+                    if teacher.days['values'][day] and teacher.classes['values'][class_.id_]:
+                        for room_id in [i for i in list(teacher.rooms['values'].keys()) if teacher.rooms['values'][i]]:
+                            for subject_id in [i for i in list(teacher.asubjects['values'].keys()) if teacher.asubjects['values'][i]]:
+                                table[day][-1].append((subject_id, teacher.id_, room_id))
+        table.append([])
+        for class_ in config.OBJECTS['class']:
+            table[-1].append({})
+            for subject in list(class_.subjects['values'].keys()):
+                table[-1][-1][subject] = class_.subjects['values'][subject]
+
+        # for i in table:
+        #     print(i)
+        # print('---------------------------')
+
+        config.SOLVED = False
+        config.RESULT = []
+        self.solve(table, 0, 0)
+        if config.SOLVED:
+            message = 'Success'
+
+            # TODO check when folder is already exist
+            os.mkdir('Schedule')
+            os.chdir('Schedule')
+            os.mkdir('Teachers')
+            os.chdir('Teachers')
+
+            # TODO make saving to docx
+            # for lesson, i in enumerate(table[:-1]):
+            #     for k in i
+
+            os.mkdir('Classes')
+
+        else:
+            message = 'Fail'
+        time = '[' + str(datetime.datetime.now()).split('.')[0].split()[1] + '] '
+        self.log.setPlainText(self.log.toPlainText() + time + message + '\n')
+
+    def solve(self, table, lesson, class_):
+        if config.SOLVED:
+            return
+        if class_ == len(table[lesson]):
+            class_ = 0
+            lesson += 1
+        if lesson + 1 > 6 * 8:
+            if all([all([j == 0 for j in k.values()]) for k in table[-1]]):
+                config.RESULT = self.copy_table(table)
+                config.SOLVED = True
+            return
+
+        for i in range(len(table[-1])):
+            targets = table[-1][i]
+            for j in targets.keys():
+                lesson_counter = 0
+                for k in range(len(table) - 1):
+                    lesson_counter += 1 if len([h for h in table[k][i] if h[0] == j]) >= 1 else 0
+                if lesson_counter < targets[j]:
+                    return
+
+        continuing = False
+        for i in table[lesson][class_]:
+
+            if table[-1][class_][i[0]] > 0:
+                continuing = True
+                out = self.copy_table(table)
+                out[lesson][class_] = [i]
+                out[-1][class_][i[0]] -= 1
+
+                for k in range(class_ + 1, len(out[lesson])):
+                    for j in out[lesson][k]:
+                        if j[1] == i[1] or j[2] == i[2]:
+                            out[lesson][k].remove(j)
+
+                for k in range(lesson + 1, len(out) - 1):
+                    for j in out[k][class_]:
+                        if i[0] == j[0] and i[1] != j[1]:
+                            out[k][class_].remove(j)
+
+                self.solve(out, lesson, class_ + 1)
+
+        if not continuing:
+            out = self.copy_table(table)
+            out[lesson][class_] = []
+            self.solve(out, lesson, class_ + 1)
+
+    def copy_table(self, table):
+        return [[table[i][k] for k in range(len(table[i]))] for i in range(len(table))]
 
 
 def set_stretch(table):

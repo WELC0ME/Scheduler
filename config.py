@@ -4,6 +4,8 @@ STYLESHEET = open('data/styles.stylesheet', 'r').read()
 DATABASE_NAME = 'data/School.db'
 OBJECTS = {}
 CHOSEN_KEY = None
+SOLVED = False
+RESULT = []
 
 
 class Obj:
