@@ -7,7 +7,8 @@ from config import *
 import config
 import datetime
 import os
-import docx
+import shutil
+from docx import Document
 
 
 class Dialog(QMainWindow):
@@ -231,32 +232,84 @@ class Menu(QMainWindow):
             for subject in list(class_.subjects['values'].keys()):
                 table[-1][-1][subject] = class_.subjects['values'][subject]
 
-        # for i in table:
-        #     print(i)
-        # print('---------------------------')
-
         config.SOLVED = False
         config.RESULT = []
         self.solve(table, 0, 0)
+
         if config.SOLVED:
-            message = 'Success'
+            try:
+                message = 'Success'
 
-            # TODO check when folder is already exist
-            os.mkdir('Schedule')
-            os.chdir('Schedule')
-            os.mkdir('Teachers')
-            os.chdir('Teachers')
+                classes = {i: k for i, k in enumerate(config.OBJECTS['class'])}
+                subjects = {i.id_: i for i in config.OBJECTS['subject']}
+                teachers = {i.id_: i for i in config.OBJECTS['teacher']}
+                rooms = {i.id_: i for i in config.OBJECTS['room']}
 
-            # TODO make saving to docx
-            # for lesson, i in enumerate(table[:-1]):
-            #     for k in i
+                shutil.rmtree('Schedule', ignore_errors=True)
+                os.mkdir('Schedule')
+                tmp_classes = {}
+                tmp_teachers = {}
+                for lesson, i in enumerate(table[:-1]):
+                    for class_, k in enumerate(i):
+                        if k:
+                            if class_ not in tmp_classes.keys():
+                                tmp_classes[class_] = []
+                            tmp_classes[class_].append((lesson, k[0][0], k[0][1], k[0][2]))
+                            if k[0][1] not in tmp_teachers.keys():
+                                tmp_teachers[k[0][1]] = []
+                            class_id = config.OBJECTS['class'][class_].id_
+                            tmp_teachers[k[0][1]].append((lesson, k[0][0], class_id, k[0][2]))
 
-            os.mkdir('Classes')
-
+                self.save('Classes', subjects, rooms, classes, teachers, tmp_classes)
+                self.save('Teachers', subjects, rooms, teachers, classes, tmp_teachers)
+            except Exception:
+                message = 'Fail'
         else:
             message = 'Fail'
         time = '[' + str(datetime.datetime.now()).split('.')[0].split()[1] + '] '
         self.log.setPlainText(self.log.toPlainText() + time + message + '\n')
+
+    def save(self, path, subjects, rooms, s_list, a_list, values):
+        os.mkdir('Schedule/' + path)
+        for id_ in list(values.keys()):
+            current = s_list[id_]
+            if hasattr(current, 'surname'):
+                name = ' '.join([
+                    str(current.surname),
+                    str(current.name),
+                    str(current.patronymic)
+                ])
+            else:
+                name = str(current.name)
+            document = Document()
+
+            document.add_heading(str(name), 0)
+            table = document.add_table(rows=7, cols=9)
+
+            week_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+            for i in range(1, 9):
+                table.rows[0].cells[i].text = str(i - 1)
+            for i in range(6):
+                table.rows[1 + i].cells[0].text = week_days[i]
+
+            for lesson in values[id_]:
+                row, col = lesson[0] // 8 + 1, lesson[0] % 8 + 1
+                cells = table.rows[row].cells
+                if hasattr(a_list[lesson[2]], 'surname'):
+                    add_name = ' '.join([
+                        str(a_list[lesson[2]].surname),
+                        str(a_list[lesson[2]].name),
+                        str(a_list[lesson[2]].patronymic)
+                    ])
+                else:
+                    add_name = str(a_list[lesson[2]].name)
+                cells[col].text = ' ' .join([
+                    str(subjects[lesson[1]].name),
+                    add_name,
+                    str(rooms[lesson[3]].name),
+                ])
+            document.save('Schedule/' + path + '/' + name + '.docx')
 
     def solve(self, table, lesson, class_):
         if config.SOLVED:
@@ -296,6 +349,8 @@ class Menu(QMainWindow):
                 for k in range(lesson + 1, len(out) - 1):
                     for j in out[k][class_]:
                         if i[0] == j[0] and i[1] != j[1]:
+                            out[k][class_].remove(j)
+                        if out[-1][class_][i[0]] == 0 and i[0] == j[0]:
                             out[k][class_].remove(j)
 
                 self.solve(out, lesson, class_ + 1)
