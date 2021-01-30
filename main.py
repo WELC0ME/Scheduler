@@ -1,8 +1,11 @@
 import sys
 import sqlite3
+from typing import Dict, Union
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView, QTableWidgetItem, QCheckBox, QSpinBox
 from PyQt5.QtGui import QIcon
 from PyQt5 import uic
+from PyQt5.QtCore import Qt
 from config import *
 import config
 import datetime
@@ -155,6 +158,9 @@ class Menu(QMainWindow):
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle('Scheduler')
 
+        flags = self.windowFlags() | Qt.FramelessWindowHint
+        self.setWindowFlags(flags)
+
         self.tabWidget.currentChanged.connect(self.exit_)
         self.btn_create.clicked.connect(self.create_schedule)
 
@@ -225,7 +231,8 @@ class Menu(QMainWindow):
                     if teacher.days['values'][day] and teacher.classes['values'][class_.id_]:
                         for room_id in [i for i in list(teacher.rooms['values'].keys()) if teacher.rooms['values'][i]]:
                             for subject_id in [i for i in list(teacher.asubjects['values'].keys()) if teacher.asubjects['values'][i]]:
-                                table[day][-1].append((subject_id, teacher.id_, room_id))
+                                groups_ = [obj_.groups for obj_ in config.OBJECTS['subject'] if obj_.id_ == subject_id][0]
+                                table[day][-1].append((subject_id, teacher.id_, room_id, groups_))
         table.append([])
         for class_ in config.OBJECTS['class']:
             table[-1].append({})
@@ -234,7 +241,11 @@ class Menu(QMainWindow):
 
         config.SOLVED = False
         config.RESULT = []
-        self.solve(table, 0, 0)
+        try:
+            self.solve(table, 0, 0)
+        except Exception:
+            config.SOLVED = False
+            config.RESULT = []
 
         if config.SOLVED:
             try:
@@ -254,11 +265,14 @@ class Menu(QMainWindow):
                         if k:
                             if class_ not in tmp_classes.keys():
                                 tmp_classes[class_] = []
-                            tmp_classes[class_].append((lesson, k[0][0], k[0][1], k[0][2]))
-                            if k[0][1] not in tmp_teachers.keys():
-                                tmp_teachers[k[0][1]] = []
+                            for m in range(len(k)):
+                                tmp_classes[class_].append((lesson, k[m][0], k[m][1], k[m][2]))
+                            for m in range(len(k)):
+                                if k[m][1] not in tmp_teachers.keys():
+                                    tmp_teachers[k[m][1]] = []
                             class_id = config.OBJECTS['class'][class_].id_
-                            tmp_teachers[k[0][1]].append((lesson, k[0][0], class_id, k[0][2]))
+                            for m in range(len(k)):
+                                tmp_teachers[k[m][1]].append((lesson, k[m][0], class_id, k[m][2]))
 
                 self.save('Classes', subjects, rooms, classes, teachers, tmp_classes)
                 self.save('Teachers', subjects, rooms, teachers, classes, tmp_teachers)
@@ -304,11 +318,11 @@ class Menu(QMainWindow):
                     ])
                 else:
                     add_name = str(a_list[lesson[2]].name)
-                cells[col].text = ' ' .join([
+                cells[col].text += ' ' .join([
                     str(subjects[lesson[1]].name),
                     add_name,
                     str(rooms[lesson[3]].name),
-                ])
+                ]) + '\n'
             document.save('Schedule/' + path + '/' + name + '.docx')
 
     def solve(self, table, lesson, class_):
@@ -336,21 +350,25 @@ class Menu(QMainWindow):
         for i in table[lesson][class_]:
 
             if table[-1][class_][i[0]] > 0:
-                continuing = True
                 out = self.copy_table(table)
-                out[lesson][class_] = [i]
+                av_teachers = [j for j in table[lesson][class_] if j[0] == i[0]]
+                i = (i[0], i[1], i[2], int(i[3]))
+                if len(av_teachers) < i[3]:
+                    continue
+                continuing = True
+                out[lesson][class_] = av_teachers[:i[3]]
                 out[-1][class_][i[0]] -= 1
 
                 for k in range(class_ + 1, len(out[lesson])):
                     for j in out[lesson][k]:
-                        if j[1] == i[1] or j[2] == i[2]:
+                        if j[1] in [m[1] for m in out[lesson][class_]] or j[2] in [m[2] for m in out[lesson][class_]]:
                             out[lesson][k].remove(j)
 
                 for k in range(lesson + 1, len(out) - 1):
                     for j in out[k][class_]:
-                        if i[0] == j[0] and i[1] != j[1]:
+                        if j[0] in [m[0] for m in out[lesson][class_]] and j[1] not in [m[1] for m in out[lesson][class_]]:
                             out[k][class_].remove(j)
-                        if out[-1][class_][i[0]] == 0 and i[0] == j[0]:
+                        if out[-1][class_][i[0]] == 0 and j[0] in [m[0] for m in out[lesson][class_]]:
                             out[k][class_].remove(j)
 
                 self.solve(out, lesson, class_ + 1)
@@ -369,11 +387,6 @@ def set_stretch(table):
         table.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
     for i in range(table.rowCount()):
         table.verticalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
-
-
-# temp for debugging
-def except_hook(cls, exception, traceback):
-    sys.__excepthook__(cls, exception, traceback)
 
 
 if __name__ == '__main__':
@@ -396,13 +409,12 @@ if __name__ == '__main__':
             'days': 'tw_days'
         }),
         'subject': Dialog('subject', 'Subjects', {
-            'name': 'le_name'
+            'name': 'le_name',
+            'groups': 'cb_groups'
         }),
         'room': Dialog('room', 'Rooms', {
             'name': 'le_name'
         }),
     }
-    # заблокировать крестик
-    sys.excepthook = except_hook  # temp for debugging
     windows['menu'] = Menu()
     sys.exit(app.exec())
