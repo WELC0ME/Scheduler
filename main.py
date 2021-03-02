@@ -166,9 +166,6 @@ class Menu(QMainWindow):
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle('Scheduler')
 
-        flags = self.windowFlags() | Qt.FramelessWindowHint
-        self.setWindowFlags(flags)
-
         self.tabWidget.currentChanged.connect(self.exit_)
         self.btn_create.clicked.connect(self.create_schedule)
 
@@ -393,7 +390,7 @@ def except_hook(cls, exception, traceback):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('icon.png'))
+    app.setWindowIcon(QIcon('data/icon.png'))
 
     windows = {
         'class': Dialog('class', 'Classes', {
@@ -412,7 +409,6 @@ if __name__ == '__main__':
         }),
         'subject': Dialog('subject', 'Subjects', {
             'name': 'le_name',
-            'groups': 'cb_groups'
         }),
         'room': Dialog('room', 'Rooms', {
             'name': 'le_name'
