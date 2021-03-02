@@ -1,8 +1,7 @@
 import sys
 import sqlite3
-from typing import Dict, Union
-
-from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView, QTableWidgetItem, QCheckBox, QSpinBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView, \
+    QTableWidgetItem, QCheckBox, QSpinBox
 from PyQt5.QtGui import QIcon
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
@@ -30,7 +29,8 @@ class Dialog(QMainWindow):
 
         con = sqlite3.connect(DATABASE_NAME)
         cur = con.cursor()
-        config.OBJECTS[name] = [self.new_object(i) for i in cur.execute('SELECT * FROM ' + db_table)]
+        config.OBJECTS[name] = [self.new_object(i) for i in
+                                cur.execute('SELECT * FROM ' + db_table)]
         con.close()
 
     def new_object(self, params):
@@ -43,16 +43,17 @@ class Dialog(QMainWindow):
         return obj
 
     def show(self):
-        super().show()
         self.statusBar().showMessage("")
         self.manage('set')
+        super().show()
 
     def save(self):
         if self.manage('get'):
             if config.CHOSEN_KEY[1] == -1:
                 config.OBJECTS[config.CHOSEN_KEY[0]].append(self.copy.copy())
             else:
-                config.OBJECTS[config.CHOSEN_KEY[0]][config.CHOSEN_KEY[1]] = self.copy.copy()
+                config.OBJECTS[config.CHOSEN_KEY[0]][
+                    config.CHOSEN_KEY[1]] = self.copy.copy()
             self.copy = None
             self.hide()
             windows['menu'].show()
@@ -64,9 +65,11 @@ class Dialog(QMainWindow):
 
     def manage(self, state):
         try:
-            self.copy = config.CHOSEN_KEY[2].copy() if not self.copy else self.copy
+            self.copy = config.CHOSEN_KEY[
+                2].copy() if not self.copy else self.copy
             for attr in self.deps.keys():
-                getattr(self, self.deps[attr][:2] + '_' + state)(getattr(self, self.deps[attr]), self.copy, attr)
+                getattr(self, self.deps[attr][:2] + '_' + state)(
+                    getattr(self, self.deps[attr]), self.copy, attr)
             return True
         except AssertionError as e:
             self.statusBar().showMessage("Error: %s" % e)
@@ -92,7 +95,8 @@ class Dialog(QMainWindow):
         columns = [i for i in range(tw.columnCount())] if attr == 'days' else [1]
         for i in range(tw.rowCount()):
             for k in columns:
-                res = getattr(tw.cellWidget(i, k), keys[str(type(tw.cellWidget(i, k))).split('.')[-1][:-2]])()
+                res = getattr(tw.cellWidget(i, k), keys[
+                    str(type(tw.cellWidget(i, k))).split('.')[-1][:-2]])()
                 if isinstance(res, bool):
                     res = 1 if res else 0
                 shift = k if attr == 'days' else 0
@@ -129,14 +133,18 @@ class Dialog(QMainWindow):
         values = list(res['values'].keys())
         if attr != 'days':
             for i in range(tw.rowCount()):
-                tw.setItem(i, 0, QTableWidgetItem(str([j for j in config.OBJECTS[res['table']] if j.id_ == values[i]][0].name)))
+                tw.setItem(i, 0, QTableWidgetItem(str(
+                    [j for j in config.OBJECTS[res['table']] if
+                     j.id_ == values[i]][0].name)))
                 tw.setCellWidget(i, 1, keys[res['type']][0]())
-                getattr(tw.cellWidget(i, 1), keys[res['type']][1])(res['values'][values[i]])
+                getattr(tw.cellWidget(i, 1), keys[res['type']][1])(
+                    res['values'][values[i]])
         else:
             for i in range(tw.rowCount()):
                 for k in range(tw.columnCount()):
                     tw.setCellWidget(i, k, keys[res['type']][0]())
-                    getattr(tw.cellWidget(i, k), keys[res['type']][1])(res['values'][values[i * tw.columnCount() + k]])
+                    getattr(tw.cellWidget(i, k), keys[res['type']][1])(
+                        res['values'][values[i * tw.columnCount() + k]])
 
     @staticmethod
     def le_get(le, obj, attr):
@@ -176,7 +184,6 @@ class Menu(QMainWindow):
             3: 'subject',
             4: 'room'
         }
-        self.show()
 
     def show(self):
         for name in config.OBJECTS.keys():
@@ -185,7 +192,8 @@ class Menu(QMainWindow):
             for attr in windows[name].deps.keys():
                 if windows[name].deps[attr][:2] in ['le', 'cb']:
                     for i, obj in enumerate(config.OBJECTS[name]):
-                        getattr(self, 'tw_' + name).setItem(i, column, QTableWidgetItem(str(getattr(obj, attr))))
+                        getattr(self, 'tw_' + name).setItem(
+                            i, column, QTableWidgetItem(str(getattr(obj, attr))))
                     column += 1
         super().show()
 
@@ -197,13 +205,16 @@ class Menu(QMainWindow):
         else:
             obj = config.OBJECTS[self.deps[self.tabWidget.currentIndex()]][row]
 
-        config.CHOSEN_KEY = (self.deps[self.tabWidget.currentIndex()], row, obj)
+        config.CHOSEN_KEY = (
+            self.deps[self.tabWidget.currentIndex()], row, obj)
         self.hide()
         windows[self.deps[self.tabWidget.currentIndex()]].show()
 
     def remove(self):
         objects = config.OBJECTS[self.deps[self.tabWidget.currentIndex()]]
-        for k in sorted(list(set([idx.row() for idx in getattr(self, 'tw_' + self.deps[self.tabWidget.currentIndex()]).selectedIndexes()])))[::-1]:
+        for k in sorted(list(set([idx.row() for idx in getattr(
+                self, 'tw_' + self.deps[self.tabWidget.currentIndex()]
+        ).selectedIndexes()])))[::-1]:
             objects.remove(objects[k])
         self.show()
 
@@ -216,7 +227,10 @@ class Menu(QMainWindow):
                     continue
                 cur.execute("DELETE FROM " + windows[window].db_table)
                 for obj in config.OBJECTS[window]:
-                    cur.execute('INSERT INTO ' + windows[window].db_table + '(' + ', '.join(['id', *[str(i) for i in windows[window].deps.keys()]]) +') VALUES (' + ', '.join(['"' + str(getattr(obj, i)) + '"' for i in [str(k) for k in ['id_', *windows[window].deps.keys()]]]) + ')')
+                    cur.execute('INSERT INTO ' + windows[window].db_table + '(' + ', '.join(
+                        ['id', *[str(i) for i in windows[window].deps.keys()]]) + ') VALUES (' + ', '.join([
+                        '"' + str(getattr(obj, i)) + '"' for i in [
+                            str(k) for k in ['id_', *windows[window].deps.keys()]]]) + ')')
             con.commit()
             con.close()
             sys.exit(1)
@@ -227,18 +241,21 @@ class Menu(QMainWindow):
             table.append([])
             for class_ in config.OBJECTS['class']:
                 table[day].append([])
-                for teacher in config.OBJECTS['teacher']:
-                    if teacher.days['values'][day] and teacher.classes['values'][class_.id_]:
-                        for room_id in [i for i in list(teacher.rooms['values'].keys()) if teacher.rooms['values'][i]]:
-                            for subject_id in [i for i in list(teacher.asubjects['values'].keys()) if teacher.asubjects['values'][i]]:
-                                groups_ = [obj_.groups for obj_ in config.OBJECTS['subject'] if obj_.id_ == subject_id][0]
-                                table[day][-1].append((subject_id, teacher.id_, room_id, groups_))
+                for teacher_ in config.OBJECTS['teacher']:
+                    if class_.id_ in teacher_.classes['values'].keys():
+                        if teacher_.days['values'][day]:
+                            for subject_ in teacher_.asubjects['values'].keys():
+                                for room_ in teacher_.rooms['values'].keys():
+                                    table[day][-1].append({
+                                        'subject': subject_,
+                                        'room': room_,
+                                        'teacher': teacher_.id_,
+                                    })
         table.append([])
         for class_ in config.OBJECTS['class']:
             table[-1].append({})
             for subject in list(class_.subjects['values'].keys()):
                 table[-1][-1][subject] = class_.subjects['values'][subject]
-
         config.SOLVED = False
         config.RESULT = []
         try:
@@ -246,84 +263,72 @@ class Menu(QMainWindow):
         except Exception:
             config.SOLVED = False
             config.RESULT = []
-
         if config.SOLVED:
             try:
-                message = 'Success'
-
-                classes = {i: k for i, k in enumerate(config.OBJECTS['class'])}
-                subjects = {i.id_: i for i in config.OBJECTS['subject']}
-                teachers = {i.id_: i for i in config.OBJECTS['teacher']}
-                rooms = {i.id_: i for i in config.OBJECTS['room']}
-
                 shutil.rmtree('Schedule', ignore_errors=True)
                 os.mkdir('Schedule')
-                tmp_classes = {}
-                tmp_teachers = {}
-                for lesson, i in enumerate(table[:-1]):
-                    for class_, k in enumerate(i):
-                        if k:
-                            if class_ not in tmp_classes.keys():
-                                tmp_classes[class_] = []
-                            for m in range(len(k)):
-                                tmp_classes[class_].append((lesson, k[m][0], k[m][1], k[m][2]))
-                            for m in range(len(k)):
-                                if k[m][1] not in tmp_teachers.keys():
-                                    tmp_teachers[k[m][1]] = []
-                            class_id = config.OBJECTS['class'][class_].id_
-                            for m in range(len(k)):
-                                tmp_teachers[k[m][1]].append((lesson, k[m][0], class_id, k[m][2]))
+                os.mkdir('Schedule/classes')
+                os.mkdir('Schedule/teachers')
+                _classes = {i.id_: i for i in config.OBJECTS['class']}
+                _teachers = {i.id_: i for i in config.OBJECTS['teacher']}
+                _rooms = {i.id_: i for i in config.OBJECTS['room']}
+                _subjects = {i.id_: i for i in config.OBJECTS['subject']}
+                for class_ in range(len(config.RESULT[0])):
+                    document = Document()
+                    document.add_heading(str(_classes[class_].name), 0)
+                    table = document.add_table(rows=7, cols=9)
+                    week_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                                 'Friday', 'Saturday']
+                    for i in range(1, 9):
+                        table.rows[0].cells[i].text = str(i - 1)
+                    for i in range(6):
+                        table.rows[1 + i].cells[0].text = week_days[i]
+                    for day in range(len(config.RESULT) - 1):
+                        if len(config.RESULT[day][class_]) == 1:
+                            teacher_ = _teachers[config.RESULT[day][class_][0]['teacher']]
+                            info = ' '.join([
+                                str(teacher_.surname),
+                                str(teacher_.name),
+                                str(teacher_.patronymic) + '\n',
+                                str(_rooms[config.RESULT[day][class_][0]['room']].name),
+                                str(_subjects[config.RESULT[day][class_][0]['subject']].name),
+                            ])
+                            table.rows[day // 8 + 1].cells[day % 8 + 1].text = info
+                    document.save('Schedule/classes/' + str(_classes[class_].name) + '.docx')
 
-                self.save('Classes', subjects, rooms, classes, teachers, tmp_classes)
-                self.save('Teachers', subjects, rooms, teachers, classes, tmp_teachers)
-            except Exception:
+                for teacher_ in [i.id_ for i in config.OBJECTS['teacher']]:
+                    document = Document()
+                    initials = ' '.join([
+                        str(_teachers[teacher_].surname),
+                        str(_teachers[teacher_].name),
+                        str(_teachers[teacher_].patronymic),
+                    ])
+                    document.add_heading(initials, 0)
+                    table = document.add_table(rows=7, cols=9)
+                    week_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                                 'Friday', 'Saturday']
+                    for i in range(1, 9):
+                        table.rows[0].cells[i].text = str(i - 1)
+                    for i in range(6):
+                        table.rows[1 + i].cells[0].text = week_days[i]
+                    for day in range(len(config.RESULT) - 1):
+                        for class_ in range(len(config.RESULT[0])):
+                            if len(config.RESULT[day][class_]) == 1:
+                                if config.RESULT[day][class_][0]['teacher'] == teacher_:
+                                    info = ' '.join([
+                                        str(_classes[class_].name),
+                                        str(_rooms[config.RESULT[day][class_][0]['room']].name),
+                                        str(_subjects[config.RESULT[day][class_][0]['subject']].name),
+                                    ])
+                                    table.rows[day // 8 + 1].cells[day % 8 + 1].text = info
+                        document.save('Schedule/teachers/' + initials + '.docx')
+                message = 'Success'
+            except:
                 message = 'Fail'
         else:
             message = 'Fail'
         time = '[' + str(datetime.datetime.now()).split('.')[0].split()[1] + '] '
         self.log.setPlainText(self.log.toPlainText() + time + message + '\n')
-
-    def save(self, path, subjects, rooms, s_list, a_list, values):
-        os.mkdir('Schedule/' + path)
-        for id_ in list(values.keys()):
-            current = s_list[id_]
-            if hasattr(current, 'surname'):
-                name = ' '.join([
-                    str(current.surname),
-                    str(current.name),
-                    str(current.patronymic)
-                ])
-            else:
-                name = str(current.name)
-            document = Document()
-
-            document.add_heading(str(name), 0)
-            table = document.add_table(rows=7, cols=9)
-
-            week_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-            for i in range(1, 9):
-                table.rows[0].cells[i].text = str(i - 1)
-            for i in range(6):
-                table.rows[1 + i].cells[0].text = week_days[i]
-
-            for lesson in values[id_]:
-                row, col = lesson[0] // 8 + 1, lesson[0] % 8 + 1
-                cells = table.rows[row].cells
-                if hasattr(a_list[lesson[2]], 'surname'):
-                    add_name = ' '.join([
-                        str(a_list[lesson[2]].surname),
-                        str(a_list[lesson[2]].name),
-                        str(a_list[lesson[2]].patronymic)
-                    ])
-                else:
-                    add_name = str(a_list[lesson[2]].name)
-                cells[col].text += ' ' .join([
-                    str(subjects[lesson[1]].name),
-                    add_name,
-                    str(rooms[lesson[3]].name),
-                ]) + '\n'
-            document.save('Schedule/' + path + '/' + name + '.docx')
 
     def solve(self, table, lesson, class_):
         if config.SOLVED:
@@ -342,35 +347,27 @@ class Menu(QMainWindow):
             for j in targets.keys():
                 lesson_counter = 0
                 for k in range(len(table) - 1):
-                    lesson_counter += 1 if len([h for h in table[k][i] if h[0] == j]) >= 1 else 0
+                    lesson_counter += 1 if len(
+                        [h for h in table[k][i] if
+                         h['subject'] == j]) >= 1 else 0
                 if lesson_counter < targets[j]:
                     return
-
         continuing = False
         for i in table[lesson][class_]:
 
-            if table[-1][class_][i[0]] > 0:
-                out = self.copy_table(table)
-                av_teachers = [j for j in table[lesson][class_] if j[0] == i[0]]
-                i = (i[0], i[1], i[2], int(i[3]))
-                if len(av_teachers) < i[3]:
-                    continue
+            if table[-1][class_][i['subject']] > 0:
                 continuing = True
-                out[lesson][class_] = av_teachers[:i[3]]
-                out[-1][class_][i[0]] -= 1
-
-                for k in range(class_ + 1, len(out[lesson])):
-                    for j in out[lesson][k]:
-                        if j[1] in [m[1] for m in out[lesson][class_]] or j[2] in [m[2] for m in out[lesson][class_]]:
-                            out[lesson][k].remove(j)
-
-                for k in range(lesson + 1, len(out) - 1):
-                    for j in out[k][class_]:
-                        if j[0] in [m[0] for m in out[lesson][class_]] and j[1] not in [m[1] for m in out[lesson][class_]]:
-                            out[k][class_].remove(j)
-                        if out[-1][class_][i[0]] == 0 and j[0] in [m[0] for m in out[lesson][class_]]:
-                            out[k][class_].remove(j)
-
+                out = self.copy_table(table)
+                out[lesson][class_] = [i]
+                out[-1][class_][i['subject']] -= 1
+                for k in range(class_, len(table[lesson])):
+                    table[lesson][k] = [j for j in table[lesson][k]
+                                        if (j['teacher'] != i['teacher'] and
+                                            j['room'] != i['room'])]
+                for k in range(lesson, len(table) - 1):
+                    table[k][class_] = [j for j in table[k][class_]
+                                        if (j['subject'] != i['subject'] or
+                                            j['teacher'] == i['teacher'])]
                 self.solve(out, lesson, class_ + 1)
 
         if not continuing:
@@ -379,7 +376,8 @@ class Menu(QMainWindow):
             self.solve(out, lesson, class_ + 1)
 
     def copy_table(self, table):
-        return [[table[i][k] for k in range(len(table[i]))] for i in range(len(table))]
+        return [[table[i][k].copy() for k in range(len(table[i]))] for i in
+                range(len(table))]
 
 
 def set_stretch(table):
@@ -387,6 +385,10 @@ def set_stretch(table):
         table.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
     for i in range(table.rowCount()):
         table.verticalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
 
 
 if __name__ == '__main__':
@@ -415,6 +417,8 @@ if __name__ == '__main__':
         'room': Dialog('room', 'Rooms', {
             'name': 'le_name'
         }),
+        'menu': Menu(),
     }
-    windows['menu'] = Menu()
+    windows['menu'].show()
+    sys.excepthook = except_hook
     sys.exit(app.exec())
